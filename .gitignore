@@ -6,3 +6,4 @@ Gemfile.lock
 .vscode/
 .editorconfig
 .ruby-version
+.idea

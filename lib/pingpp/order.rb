@@ -59,11 +59,11 @@ module Pingpp
     end
 
     def refund_url
-      resource_url + '/order_refunds'
+      resource_url + '/refunds'
     end
 
     def self.refund_url(order)
-      "#{resource_url}/#{order}/order_refunds"
+      "#{resource_url}/#{order}/refunds"
     end
   end
 end
