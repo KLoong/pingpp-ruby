@@ -26,7 +26,12 @@ module Pingpp
       initialize_from(response, opts)
     end
 
-    def new_method_url(id, function)
+    def self.verify_send_sms(params, opts = {})
+      response, opts = request(:post, "#{resource_url}/send_sms", params, opts)
+      initialize_from(response, opts)
+    end
+
+    def self.new_method_url(id, function)
       "#{resource_url}/#{id}/#{function}"
     end
   end
