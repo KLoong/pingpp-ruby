@@ -1,5 +1,5 @@
 module Pingpp
-  class User < AppBasedResource
+  class User < APIResource
     extend Pingpp::APIOperations::Create
     extend Pingpp::APIOperations::List
     include Pingpp::APIOperations::Delete
