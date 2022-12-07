@@ -7,11 +7,10 @@ module Pingpp
 
     def verify(id, params, opts = {})
       response, opts = request(:post, "#{resource_url}/#{id}/verify", params, opts)
-      initialize_from(response, opts)
     end
 
     def self.object_name
-      'settle_account'
+      'identities'
     end
   end
 end
