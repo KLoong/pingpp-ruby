@@ -6,7 +6,7 @@ module Pingpp
     include Pingpp::APIOperations::Update
 
     def self.verify(id, params, opts = {})
-      response, opts = request(:post, "#{resource_url}/#{id}/verify", params, opts)
+      response, opts = request(:post, "#{resource_url(opts)}/#{id}/verify", params, opts)
       Util.convert_to_pingpp_object(response, opts)
     end
 

@@ -5,8 +5,8 @@ module Pingpp
     include Pingpp::APIOperations::Delete
     include Pingpp::APIOperations::Update
 
-    def self.send_sms(id, params, opts = {})
-      response, opts = request(:post, new_method_url(id, 'send_sms'), params, opts)
+    def self.send_sms(id, opts = {})
+      response, opts = request(:post, new_method_url(id, 'send_sms'), opts)
       Util.convert_to_pingpp_object(response, opts)
     end
 
