@@ -1,3 +1,3 @@
 module Pingpp
-  VERSION = '2.2.9'
+  VERSION = '2.3.0'
 end
