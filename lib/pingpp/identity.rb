@@ -1,5 +1,5 @@
 module Pingpp
-  class SettleAccount < UserBasedResource
+  class Identity < UserBasedResource
     extend Pingpp::APIOperations::Create
     extend Pingpp::APIOperations::List
     include Pingpp::APIOperations::Delete

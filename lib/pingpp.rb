@@ -34,6 +34,7 @@ require 'pingpp/event'
 require 'pingpp/transfer'
 require 'pingpp/webhook'
 require 'pingpp/identification'
+require 'pingpp/identity'
 require 'pingpp/customs'
 require 'pingpp/batch_refund'
 require 'pingpp/batch_transfer'
@@ -86,12 +87,12 @@ module Pingpp
     Errno::ETIMEDOUT,
     RestClient::Conflict,
     RestClient::RequestTimeout,
-    RestClient::BadGateway,
+    RestClient::BadGateway
   ].freeze
 
   @api_base = 'https://api.pingxx.com'
 
-  @ca_bundle_path  = DEFAULT_CA_BUNDLE_PATH
+  @ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
   @verify_ssl_certs = true
 
   @open_timeout = 30
@@ -103,7 +104,7 @@ module Pingpp
 
   @bad_gateway_match = true
 
-  HEADERS_TO_PARSE = [:pingpp_one_version, :pingpp_sdk_version]
+  HEADERS_TO_PARSE = %i[pingpp_one_version pingpp_sdk_version]
 
   class << self
     attr_accessor :api_key, :api_base, :verify_ssl_certs, :api_version,
@@ -112,13 +113,13 @@ module Pingpp
     attr_reader :max_network_retry_delay, :initial_network_retry_delay
   end
 
-  def self.api_url(url='', api_base_url=nil)
+  def self.api_url(url = '', api_base_url = nil)
     (api_base_url || @api_base) + url
   end
 
   def self.parse_headers(headers)
     @parsed_headers = {}
-    if headers && headers.respond_to?("each")
+    if headers && headers.respond_to?('each')
       headers.each do |k, v|
         k = k[0, 5] == 'HTTP_' ? k[5..-1] : k
         header_key = k.gsub(/-/, '_').to_s.downcase.to_sym
@@ -133,31 +134,31 @@ module Pingpp
     end
   end
 
-  def self.request(method, url, api_key, params={}, headers={}, api_base_url=nil)
-    api_base_url = api_base_url || @api_base
+  def self.request(method, url, api_key, params = {}, headers = {}, api_base_url = nil)
+    api_base_url ||= @api_base
 
     unless api_key ||= @api_key
-      raise AuthenticationError.new('No API key provided. ' +
-        'Set your API key using "Pingpp.api_key = <API-KEY>". ' +
-        'You can generate API keys from the Pingpp web interface. ' +
-        'See https://pingxx.com/document/api for details.')
+      raise AuthenticationError, 'No API key provided. ' +
+                                 'Set your API key using "Pingpp.api_key = <API-KEY>". ' +
+                                 'You can generate API keys from the Pingpp web interface. ' +
+                                 'See https://pingxx.com/document/api for details.'
     end
 
     if api_key =~ /\s/
-      raise AuthenticationError.new('Your API key is invalid, as it contains ' +
-        'whitespace. (HINT: You can double-check your API key from the ' +
-        'Pingpp web interface. See https://pingxx.com/document/api for details.)')
+      raise AuthenticationError, 'Your API key is invalid, as it contains ' +
+                                 'whitespace. (HINT: You can double-check your API key from the ' +
+                                 'Pingpp web interface. See https://pingxx.com/document/api for details.)'
     end
 
     if verify_ssl_certs
-      request_opts = {:verify_ssl => OpenSSL::SSL::VERIFY_PEER,
-                      :ssl_ca_file => @ca_bundle_path}
+      request_opts = { verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+                       ssl_ca_file: @ca_bundle_path }
     else
-      request_opts = {:verify_ssl => false}
+      request_opts = { verify_ssl: false }
       unless @verify_ssl_warned
         @verify_ssl_warned = true
-        $stderr.puts("WARNING: Running without SSL cert verification. " \
-          "You should never do this in production. " \
+        warn('WARNING: Running without SSL cert verification. ' \
+          'You should never do this in production. ' \
           "Execute 'Pingpp.verify_ssl_certs = true' to enable verification.")
       end
     end
@@ -175,9 +176,9 @@ module Pingpp
       payload = JSON.generate(params)
     end
 
-    request_opts.update(:headers => request_headers(api_key, method_sym, payload, url).update(headers),
-                        :method => method, :open_timeout => open_timeout,
-                        :payload => payload, :url => url, :timeout => timeout)
+    request_opts.update(headers: request_headers(api_key, method_sym, payload, url).update(headers),
+                        method: method, open_timeout: open_timeout,
+                        payload: payload, url: url, timeout: timeout)
 
     response = execute_request_with_rescues(request_opts, api_base_url)
 
@@ -200,24 +201,21 @@ module Pingpp
     @ca_bundle_path = val
   end
 
-  private
-
   def self.user_agent
     @uname ||= get_uname
     lang_version = "#{RUBY_VERSION} p#{RUBY_PATCHLEVEL} (#{RUBY_RELEASE_DATE})"
 
     {
-      :bindings_version => Pingpp::VERSION,
-      :lang => 'ruby',
-      :lang_version => lang_version,
-      :platform => RUBY_PLATFORM,
-      :publisher => 'pingpp',
-      :uname => @uname,
-      :hostname => Socket.gethostname,
-      :engine => defined?(RUBY_ENGINE) ? RUBY_ENGINE : '',
-      :openssl_version => OpenSSL::OPENSSL_VERSION
+      bindings_version: Pingpp::VERSION,
+      lang: 'ruby',
+      lang_version: lang_version,
+      platform: RUBY_PLATFORM,
+      publisher: 'pingpp',
+      uname: @uname,
+      hostname: Socket.gethostname,
+      engine: defined?(RUBY_ENGINE) ? RUBY_ENGINE : '',
+      openssl_version: OpenSSL::OPENSSL_VERSION
     }
-
   end
 
   def self.get_uname
@@ -230,7 +228,7 @@ module Pingpp
       when /mswin|mingw/i
         _uname_ver
       else
-        "unknown platform"
+        'unknown platform'
       end
     end
   end
@@ -238,22 +236,21 @@ module Pingpp
   def self._uname_uname
     (`uname -a 2>/dev/null` || '').strip
   rescue Errno::ENOMEM
-    "uname lookup failed"
+    'uname lookup failed'
   end
 
   def self._uname_ver
     (`ver` || '').strip
   rescue Errno::ENOMEM
-    "uname lookup failed"
+    'uname lookup failed'
   end
 
   def self.execute_request_with_rescues(request_opts, api_base_url, retry_count = 0)
     begin
       response = execute_request(request_opts)
-
-    rescue => e
+    rescue StandardError => e
       if should_retry?(e, retry_count)
-        retry_count = retry_count + 1
+        retry_count += 1
         sleep sleep_time(retry_count)
         retry
       end
@@ -281,35 +278,35 @@ module Pingpp
   end
 
   def self.request_headers(api_key, method_sym, data, url)
-    post_or_put = (method_sym == :post or method_sym == :put)
+    post_or_put = %i[post put].include?(method_sym)
     headers = {
-      :user_agent => "Pingpp/v1 RubyBindings/#{Pingpp::VERSION}",
-      :authorization => "Bearer #{api_key}",
-      :content_type => post_or_put ? 'application/json' : 'application/x-www-form-urlencoded'
+      user_agent: "Pingpp/v1 RubyBindings/#{Pingpp::VERSION}",
+      authorization: "Bearer #{api_key}",
+      content_type: post_or_put ? 'application/json' : 'application/x-www-form-urlencoded'
     }
 
     headers[:pingplusplus_version] = api_version if api_version
     headers.update(parsed_headers) if parsed_headers && !parsed_headers.empty?
 
     begin
-      headers.update(:x_pingpp_client_user_agent => JSON.generate(user_agent))
-    rescue => e
-      headers.update(:x_pingpp_client_raw_user_agent => user_agent.inspect,
-                     :error => "#{e} (#{e.class})")
+      headers.update(x_pingpp_client_user_agent: JSON.generate(user_agent))
+    rescue StandardError => e
+      headers.update(x_pingpp_client_raw_user_agent: user_agent.inspect,
+                     error: "#{e} (#{e.class})")
     end
 
     data_to_be_signed = data || ''
     uri = URI.parse(url)
     data_to_be_signed += uri.path
-    (!uri.query.nil?) && data_to_be_signed += '?' + uri.query
+    !uri.query.nil? && data_to_be_signed += '?' + uri.query
 
     request_time = Time.now.to_i.to_s
-    headers.update(:pingplusplus_request_timestamp => request_time)
+    headers.update(pingplusplus_request_timestamp: request_time)
     data_to_be_signed += request_time
 
     if private_key
       signature = sign_request(data_to_be_signed, private_key)
-      headers.update(:pingplusplus_signature => signature)
+      headers.update(pingplusplus_signature: signature)
     end
 
     headers
@@ -341,7 +338,7 @@ module Pingpp
 
   def self.sign_request(data, pri_key)
     pkey = OpenSSL::PKey.read(pri_key)
-    return Base64.strict_encode64(pkey.sign(OpenSSL::Digest::SHA256.new, data))
+    Base64.strict_encode64(pkey.sign(OpenSSL::Digest.new('SHA256'), data))
   end
 
   def self.general_api_error(rcode, rbody)
@@ -354,8 +351,7 @@ module Pingpp
       error_obj = JSON.parse(resp.body)
       error_obj = Util.symbolize_names(error_obj)
       error = error_obj[:error]
-      raise PingppError.new unless error && error.is_a?(Hash)
-
+      raise PingppError unless error && error.is_a?(Hash)
     rescue JSON::ParserError, PingppError
       raise general_api_error(resp.code, resp.body)
     end
@@ -372,7 +368,6 @@ module Pingpp
     else
       raise api_error(error, resp, error_obj)
     end
-
   end
 
   def self.invalid_request_error(error, resp, error_obj)
@@ -399,68 +394,62 @@ module Pingpp
     APIError.new(error[:message], resp.code, resp.body, error_obj, resp.headers)
   end
 
-  def self.handle_restclient_error(e, request_opts, retry_count, api_base_url=nil)
-    api_base_url = @api_base unless api_base_url
+  def self.handle_restclient_error(e, _request_opts, retry_count, api_base_url = nil)
+    api_base_url ||= @api_base
 
-    connection_message = "Please check your internet connection and try again. " \
+    connection_message = 'Please check your internet connection and try again. ' \
         "If this problem persists, you should check Pingpp's service status at " \
-        "https://www.pingxx.com/status"
+        'https://www.pingxx.com/status'
 
-    case e
-    when RestClient::RequestTimeout
-      message = "Could not connect to Pingpp (#{api_base_url}). #{connection_message}"
+    message = case e
+              when RestClient::RequestTimeout
+                "Could not connect to Pingpp (#{api_base_url}). #{connection_message}"
 
-    when RestClient::ServerBrokeConnection
-      message = "The connection to the server (#{api_base_url}) broke before the " \
-        "request completed. #{connection_message}"
+              when RestClient::ServerBrokeConnection
+                "The connection to the server (#{api_base_url}) broke before the " \
+                  "request completed. #{connection_message}"
 
-    when OpenSSL::SSL::SSLError
-      message = "Could not establish a secure connection to Ping++, you may " \
-                "need to upgrade your OpenSSL version. To check, try running " \
-                "'openssl s_client -connect api.pingxx.com:443' from the " \
-                "command line."
+              when OpenSSL::SSL::SSLError
+                'Could not establish a secure connection to Ping++, you may ' \
+                          'need to upgrade your OpenSSL version. To check, try running ' \
+                          "'openssl s_client -connect api.pingxx.com:443' from the " \
+                          'command line.'
 
-    when RestClient::SSLCertificateNotVerified
-      message = "Could not verify Pingpp's SSL certificate. " \
-        "Please make sure that your network is not intercepting certificates. " \
-        "(Try going to (#{api_base_url}) in your browser.)"
+              when RestClient::SSLCertificateNotVerified
+                "Could not verify Pingpp's SSL certificate. " \
+                  'Please make sure that your network is not intercepting certificates. ' \
+                  "(Try going to (#{api_base_url}) in your browser.)"
 
-    when SocketError
-      message = "Unexpected error communicating when trying to connect to Pingpp. " \
-        "You may be seeing this message because your DNS is not working. " \
-        "To check, try running 'host pingxx.com' from the command line."
+              when SocketError
+                'Unexpected error communicating when trying to connect to Pingpp. ' \
+                  'You may be seeing this message because your DNS is not working. ' \
+                  "To check, try running 'host pingxx.com' from the command line."
 
-    else
-      message = "Unexpected error communicating with Pingpp."
+              else
+                'Unexpected error communicating with Pingpp.'
 
-    end
+              end
 
-    if retry_count > 0
-      message += " Request was retried #{retry_count} times."
-    end
+    message += " Request was retried #{retry_count} times." if retry_count > 0
 
-    raise APIConnectionError.new(message + "\n\n(Network error: #{e.message})")
+    raise APIConnectionError, message + "\n\n(Network error: #{e.message})"
   end
 
   def self.should_retry?(e, retry_count)
-    if retry_count >= self.max_network_retries
+    if retry_count >= max_network_retries
       return false
     elsif !RETRY_EXCEPTIONS.any? { |klass| e.is_a?(klass) }
       return false
     elsif e.is_a?(RestClient::BadGateway)
-      if self.bad_gateway_match && !e.response.to_s.match(/.+DOCTYPE.+http\-equiv.+refresh.+content.+/m)
-        return false
-      end
+      return false if bad_gateway_match && !e.response.to_s.match(/.+DOCTYPE.+http-equiv.+refresh.+content.+/m)
     end
 
-    return true
+    true
   end
 
   def self.sleep_time(retry_count)
-    sleep_seconds = [initial_network_retry_delay * (2 ** (retry_count - 1)), max_network_retry_delay].min
-    sleep_seconds = sleep_seconds * (0.5 * (1 + rand()))
-    sleep_seconds = [initial_network_retry_delay, sleep_seconds].max
-
-    sleep_seconds
+    sleep_seconds = [initial_network_retry_delay * (2**(retry_count - 1)), max_network_retry_delay].min
+    sleep_seconds *= (0.5 * (1 + rand))
+    [initial_network_retry_delay, sleep_seconds].max
   end
 end
