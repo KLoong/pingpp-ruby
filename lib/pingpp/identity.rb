@@ -6,7 +6,7 @@ module Pingpp
     include Pingpp::APIOperations::Update
 
     def self.object_name
-      'identities'
+      'identitie'
     end
   end
 end
