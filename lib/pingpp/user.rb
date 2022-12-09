@@ -26,8 +26,14 @@ module Pingpp
       Util.convert_to_pingpp_object(response, opts)
     end
 
+    # 发送验证短信
     def self.verify_send_sms(params, opts = {})
       response, opts = request(:post, "#{resource_url}/send_sms", params, opts)
+      Util.convert_to_pingpp_object(response, opts)
+    end
+
+    def self.identities_renew(params, opts = {})
+      response, opts = request(:post, "#{resource_url}/identities_renew", params, opts)
       Util.convert_to_pingpp_object(response, opts)
     end
 
